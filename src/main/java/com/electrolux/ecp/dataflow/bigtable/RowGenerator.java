@@ -7,7 +7,10 @@ import com.electrolux.ecp.dataflow.bigtable.model.bigtable.EventReference;
 import com.electrolux.ecp.dataflow.bigtable.model.bigtable.EventTimestamp;
 import com.electrolux.ecp.dataflow.bigtable.model.bigtable.EventValue;
 import com.electrolux.ecp.dataflow.bigtable.model.pubsub.DecodedHaclMessage;
-import com.google.cloud.bigtable.data.v2.models.RowMutation;
+
+import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Put;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -19,7 +22,25 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
-public class RowGenerator extends DoFn<String, RowMutation> {
+class PutMutation extends Put {
+
+    public PutMutation(String rowKey) {
+        super(rowKey.getBytes());
+    }
+
+    public PutMutation setCell(String family, String qualifier, String value) {
+        this.addColumn(family.getBytes(), qualifier.getBytes(), value.getBytes());
+        return this;
+    }
+
+    public PutMutation setCell(String family, String qualifier, Integer value) {
+        this.addColumn(family.getBytes(), qualifier.getBytes(), String.valueOf(value).getBytes());
+        return this;
+    }
+
+}
+
+public class RowGenerator extends DoFn<String, Mutation> {
 
     private static final Gson GSON = new GsonBuilder().create();
 
@@ -33,7 +54,7 @@ public class RowGenerator extends DoFn<String, RowMutation> {
                 event.getComponentIdentifier(),
                 event.getGatewayTimestamp());
 
-        RowMutation rowMutation = getRowMutationRequest(rowKey,
+        Mutation rowMutation = getRowMutationRequest(rowKey,
                 event.getComponentIdentifier(),
                 event.getEventValue(),
                 event.getEventTimestamp(),
@@ -68,13 +89,15 @@ public class RowGenerator extends DoFn<String, RowMutation> {
         return localDateTime.toEpochSecond(ZoneOffset.UTC);
     }
 
-    private RowMutation getRowMutationRequest(String rowKey,
+
+    private Mutation getRowMutationRequest(String rowKey,
                                               ComponentIdentifier componentIdentifier,
                                               EventValue eventValue,
                                               EventTimestamp eventTimestamp,
                                               EventReference eventReference) {
 
-        RowMutation rowMutation = RowMutation.create("EVENTS", rowKey)
+        PutMutation rowMutation = new PutMutation(rowKey);
+        rowMutation
                 .setCell("VALUE", "RAW_INPUT", eventValue.getRawInput())
                 .setCell("TIMESTAMP", "SOURCE_TS", eventTimestamp.getSourceTimestamp())
                 .setCell("TIMESTAMP", "PROCESS_TS", eventTimestamp.getProcessTimestamp())

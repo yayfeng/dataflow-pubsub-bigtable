@@ -16,7 +16,8 @@ public class EventStore {
     private static final String TABLE_ID = "EVENTS";
 
     public static void main(String[] args) throws Exception {
-        CloudBigtableTableConfiguration config =
+
+        CloudBigtableTableConfiguration bigtableConfig =
                 new CloudBigtableTableConfiguration.Builder()
                         .withProjectId(PROJECT_ID)
                         .withInstanceId(INSTANCE_ID)
@@ -24,13 +25,11 @@ public class EventStore {
                         .build();
 
         Pipeline p = Pipeline.create();
-
         p.apply(
                 PubsubIO.readStrings().fromTopic(
                         MessageFormat.format("projects/{0}/topics/{1}", PROJECT_ID, PUBSUB_TOPIC)))
-            .apply(ParDo.of(new RowGenerator()));
-            // .apply(ParDo.of(new RowGenerator()))
-            // .apply(CloudBigtableIO.writeToTable(config));
+            .apply(ParDo.of(new RowGenerator()))
+            .apply(CloudBigtableIO.writeToTable(bigtableConfig));
 
         p.run();
     }
