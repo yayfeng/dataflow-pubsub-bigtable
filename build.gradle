@@ -12,6 +12,12 @@ jar {
     version = application_version
 }
 
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -28,10 +34,13 @@ sourceSets {
 }
 
 dependencies {
+    compile group: 'com.google.guava', name: 'guava', version: '23.0'
+    compile group: 'com.google.cloud.bigtable', name: 'bigtable-client-core', version: '1.13.0'
     compile group: 'com.google.cloud.dataflow', name: 'google-cloud-dataflow-java-sdk-all', version: '2.5.0'
     compile group: 'org.apache.beam', name: 'beam-sdks-java-core', version: "${beam_version}"
     compile group: 'org.apache.beam', name: 'beam-sdks-common-fn-api', version: "${beam_version}"
     compile group: 'org.apache.beam', name: 'beam-sdks-common-runner-api', version: "${beam_version}"
     compile group: 'org.apache.beam', name: 'beam-sdks-java-extensions-join-library', version: "${beam_version}"
     compile group: 'org.apache.beam', name: 'beam-sdks-java-extensions-google-cloud-platform-core', version: "${beam_version}"
+    compile group: 'org.projectlombok', name: 'lombok', version: '1.18.10'
 }
